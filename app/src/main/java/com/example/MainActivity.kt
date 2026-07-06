@@ -261,12 +261,33 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
         }
     }
 
+    val domeRadius = 140f
+    val domeHeight = 80f // height of the straight vertical part
+    val domePath = remember {
+        androidx.compose.ui.graphics.Path().apply {
+            moveTo(-domeRadius, domeHeight)
+            lineTo(-domeRadius, 0f)
+            arcTo(
+                rect = androidx.compose.ui.geometry.Rect(-domeRadius, -domeRadius, domeRadius, domeRadius),
+                startAngleDegrees = 180f,
+                sweepAngleDegrees = 180f,
+                forceMoveTo = false
+            )
+            lineTo(domeRadius, domeHeight)
+        }
+    }
+
+    val supportBrush = remember {
+        androidx.compose.ui.graphics.Brush.verticalGradient(
+            colors = listOf(Color.Transparent, Color(0xFFD3E4CD).copy(alpha = 0.8f)) // Macaron Mint
+        )
+    }
+
     Canvas(modifier = Modifier.fillMaxSize()) {
         val currentMs = timeMs // Read to trigger redraw
         val pivotX = size.width / 2f
         val pivotY = 0f // The rotation anchor is at the fading end (top of the screen)
         val bellYOffset = size.height * 0.35f // How far down the string goes before the bell
-        val domeRadius = 140f
         
         withTransform({
             translate(pivotX, pivotY)
@@ -274,11 +295,7 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
         }) {
                 // Support string extends from the top of the screen down to the bell
                 drawLine(
-                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xFFD3E4CD).copy(alpha = 0.8f)), // Macaron Mint
-                        startY = 0f,
-                        endY = bellYOffset
-                    ),
+                    brush = supportBrush,
                     start = Offset.Zero,
                     end = Offset(0f, bellYOffset),
                     strokeWidth = 3f
@@ -288,21 +305,6 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
                 withTransform({
                     translate(0f, bellYOffset + domeRadius)
                 }) {
-                    val domeHeight = 80f // height of the straight vertical part
-
-                    // Dome Path
-                    val domePath = androidx.compose.ui.graphics.Path().apply {
-                        moveTo(-domeRadius, domeHeight)
-                        lineTo(-domeRadius, 0f)
-                        arcTo(
-                            rect = androidx.compose.ui.geometry.Rect(-domeRadius, -domeRadius, domeRadius, domeRadius),
-                            startAngleDegrees = 180f,
-                            sweepAngleDegrees = 180f,
-                            forceMoveTo = false
-                        )
-                        lineTo(domeRadius, domeHeight)
-                    }
-
                     // Draw Inner Glow / Fill (Macaron Blue)
                     drawPath(
                         path = domePath,
@@ -451,11 +453,11 @@ class WindChimeModel {
         tanzakuAngle += tanzakuVel * dt
         bellAngle += bellVel * dt
 
-        // Explicitly check for NaN and reset to 0 to prevent render thread freezing
-        if (tanzakuAngle.isNaN()) tanzakuAngle = 0f
-        if (bellAngle.isNaN()) bellAngle = 0f
-        if (tanzakuVel.isNaN()) tanzakuVel = 0f
-        if (bellVel.isNaN()) bellVel = 0f
+        // Explicitly check for non-finite values and reset to 0 to prevent render thread freezing
+        if (!tanzakuAngle.isFinite()) tanzakuAngle = 0f
+        if (!bellAngle.isFinite()) bellAngle = 0f
+        if (!tanzakuVel.isFinite()) tanzakuVel = 0f
+        if (!bellVel.isFinite()) bellVel = 0f
 
         // Clamp angles to prevent excessive values from breaking the Canvas rendering
         tanzakuAngle = tanzakuAngle.coerceIn(-3f, 3f)
