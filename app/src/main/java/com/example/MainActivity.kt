@@ -98,7 +98,6 @@ fun OrnamentApp() {
                 detectTapGestures(
                     onTap = {
                         isSettingsButtonVisible = true
-                        chimeModel.applyGust((Random.nextFloat() - 0.5f) * 15f)
                     }
                 )
             }
