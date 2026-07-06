@@ -595,15 +595,19 @@ class WindGenerator {
 
     fun getForce(dt: Float): Float {
         time += dt
-        // Reduce probability of sudden gust target change
-        if (Random.nextFloat() < dt * 0.2f) {
-            gustTarget = (Random.nextFloat() * 2f - 1f) * 2f // Gentler wind gust target
-        }
-        // Smoothly interpolate towards gustTarget, effectively making the wind change softer/more linear
-        gust += (gustTarget - gust) * dt * 0.3f
         
-        // Slower, softer base wind oscillation
-        val base = sin(time * 0.5f) * 0.6f + sin(time * 1.2f) * 0.2f 
+        // Increase the frequency of target changes for more randomness
+        if (Random.nextFloat() < dt * 0.4f) {
+            // Increase maximum wind gust force by 1.5x (from 2f to 3f)
+            gustTarget = (Random.nextFloat() * 2f - 1f) * 3f 
+        }
+        
+        // Lower interpolation factor (0.3f to 0.2f) makes the transition even smoother
+        gust += (gustTarget - gust) * dt * 0.2f
+        
+        // Base wind oscillation increased by 1.5x (0.6f -> 0.9f, 0.2f -> 0.3f)
+        val base = sin(time * 0.5f) * 0.9f + sin(time * 1.2f) * 0.3f 
+        
         return base + gust
     }
 }
