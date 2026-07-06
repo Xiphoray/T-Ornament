@@ -40,6 +40,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -81,7 +86,8 @@ fun OrnamentApp() {
     var currentOrnament by remember { mutableStateOf(OrnamentType.WIND_CHIME) }
     // Use dark theme by default, as requested
     var backgroundColor by remember { mutableStateOf(Color.Black) } 
-    val chimeModel = remember { WindChimeModel() }
+    val windChimeModel = remember { WindChimeModel() }
+    val teruTeruBozuModel = remember { TeruTeruBozuModel() }
 
     LaunchedEffect(isSettingsButtonVisible) {
         if (isSettingsButtonVisible && !isSettingsPageOpen) {
@@ -103,8 +109,8 @@ fun OrnamentApp() {
             }
     ) {
         when (currentOrnament) {
-            OrnamentType.WIND_CHIME -> WindChimeScreen(chimeModel = chimeModel)
-            OrnamentType.TERU_TERU_BOZU -> TeruTeruBozuScreen(chimeModel = chimeModel)
+            OrnamentType.WIND_CHIME -> WindChimeScreen(model = windChimeModel)
+            OrnamentType.TERU_TERU_BOZU -> TeruTeruBozuScreen(model = teruTeruBozuModel)
         }
 
         AnimatedVisibility(
@@ -144,6 +150,7 @@ fun OrnamentApp() {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage(
     currentOrnament: OrnamentType,
@@ -164,63 +171,66 @@ fun SettingsPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.8f))
+            .background(Color.Black.copy(alpha = 0.6f))
             .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {
                 onClose()
             }
     ) {
         Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F9FC)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(32.dp)
-                .clickable { /* prevent click through */ }
+                .fillMaxWidth()
+                .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { /* prevent click through */ }
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Settings",
-                    color = Color.Black,
-                    fontSize = 24.sp,
+                    text = "Customization",
+                    color = Color(0xFF1A1C1E),
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 24.dp)
                 )
 
                 Text(
                     text = "Ornament Type",
-                    color = Color.Black.copy(alpha = 0.6f),
+                    color = Color(0xFF42474E),
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(bottom = 8.dp)
                 )
                 
-                // Mock dropdown/selection for ornament type
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 24.dp)
+                androidx.compose.material3.ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF0F0F0),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { expanded = true }
-                    ) {
-                        Text(
-                            text = currentOrnament.displayName,
-                            color = Color.Black,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(16.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                    androidx.compose.material3.DropdownMenu(
+                    androidx.compose.material3.OutlinedTextField(
+                        readOnly = true,
+                        value = currentOrnament.displayName,
+                        onValueChange = { },
+                        modifier = Modifier.menuAnchor().fillMaxWidth(),
+                        trailingIcon = {
+                            androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0061A4),
+                            unfocusedBorderColor = Color(0xFFC3C7CF)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false },
-                        modifier = Modifier.fillMaxWidth(0.7f)
+                        modifier = Modifier.background(Color.White)
                     ) {
                         OrnamentType.entries.forEach { type ->
                             androidx.compose.material3.DropdownMenuItem(
@@ -235,30 +245,39 @@ fun SettingsPage(
                 }
 
                 Text(
-                    text = "Background Color",
-                    color = Color.Black.copy(alpha = 0.6f),
+                    text = "Background Theme",
+                    color = Color(0xFF42474E),
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(bottom = 12.dp)
                 )
 
                 Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
                 ) {
                     bgColors.forEach { color ->
                         val isSelected = color == currentColor
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(48.dp)
                                 .background(color, CircleShape)
-                                .clickable { onColorSelected(color) }
+                                .border(
+                                    width = if (isSelected) 3.dp else 1.dp,
+                                    color = if (isSelected) Color(0xFF0061A4) else Color.LightGray,
+                                    shape = CircleShape
+                                )
+                                .clickable { onColorSelected(color) },
+                            contentAlignment = Alignment.Center
                         ) {
                             if (isSelected) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(4.dp)
-                                        .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                                androidx.compose.material3.Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
@@ -267,9 +286,11 @@ fun SettingsPage(
 
                 androidx.compose.material3.Button(
                     onClick = onClose,
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFF333333))
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFF0061A4))
                 ) {
-                    Text("Close", color = Color.White)
+                    Text("Apply & Close", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -277,7 +298,7 @@ fun SettingsPage(
 }
 
 @Composable
-fun WindChimeScreen(chimeModel: WindChimeModel) {
+fun WindChimeScreen(model: WindChimeModel) {
     var timeMs by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
@@ -289,7 +310,7 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
             if (rawDt > 0 && rawDt < 0.1f) {
                 // Cap the simulation step to 1/30th of a second to ensure stability
                 val simDt = rawDt.coerceAtMost(0.033f)
-                chimeModel.update(simDt)
+                model.update(simDt)
             }
         }
     }
@@ -324,7 +345,7 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
         
         withTransform({
             translate(pivotX, pivotY)
-            rotate(Math.toDegrees(chimeModel.bellAngle.toDouble()).toFloat(), Offset.Zero)
+            rotate(Math.toDegrees(model.bellAngle.toDouble()).toFloat(), Offset.Zero)
         }) {
                 // Support string extends from the top of the screen down to the bell
                 drawLine(
@@ -367,7 +388,7 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
                     withTransform({
                         // Tanzaku pivots from inside the dome, around the center of the arc
                         // Subtract bellAngle so tanzakuAngle is relative to world vertical
-                        rotate(Math.toDegrees((chimeModel.tanzakuAngle - chimeModel.bellAngle).toDouble()).toFloat(), Offset.Zero)
+                        rotate(Math.toDegrees((model.tanzakuAngle - model.bellAngle).toDouble()).toFloat(), Offset.Zero)
                     }) {
                         // Internal Clapper String
                         val stringLen = 70f
@@ -429,7 +450,7 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
 }
 
 @Composable
-fun TeruTeruBozuScreen(chimeModel: WindChimeModel) {
+fun TeruTeruBozuScreen(model: TeruTeruBozuModel) {
     var timeMs by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
@@ -441,7 +462,7 @@ fun TeruTeruBozuScreen(chimeModel: WindChimeModel) {
             if (rawDt > 0 && rawDt < 0.1f) {
                 // Cap the simulation step to 1/30th of a second to ensure stability
                 val simDt = rawDt.coerceAtMost(0.033f)
-                chimeModel.update(simDt)
+                model.update(simDt)
             }
         }
     }
@@ -462,7 +483,7 @@ fun TeruTeruBozuScreen(chimeModel: WindChimeModel) {
         withTransform({
             translate(pivotX, pivotY)
             // Use bellAngle for the main string sway
-            rotate(Math.toDegrees(chimeModel.bellAngle.toDouble()).toFloat(), Offset.Zero)
+            rotate(Math.toDegrees(model.bodyAngle.toDouble()).toFloat(), Offset.Zero)
         }) {
             // Support string
             drawLine(
@@ -479,7 +500,7 @@ fun TeruTeruBozuScreen(chimeModel: WindChimeModel) {
                 // Draw skirt (driven by tanzaku angle but pivoted from neck)
                 withTransform({
                     // Scale down the tanzaku sway for the skirt so it looks connected
-                    rotate(Math.toDegrees((chimeModel.tanzakuAngle - chimeModel.bellAngle).toDouble()).toFloat() * 0.4f, Offset.Zero)
+                    rotate(Math.toDegrees((model.skirtAngle - model.bodyAngle).toDouble()).toFloat() * 0.4f, Offset.Zero)
                 }) {
                     // Skirt
                     val skirtPath = androidx.compose.ui.graphics.Path().apply {
@@ -612,9 +633,13 @@ class WindGenerator {
     }
 }
 
-class WindChimeModel {
-    val windGen = WindGenerator()
+abstract class OrnamentModel {
+    protected val windGen = WindGenerator()
+    abstract fun update(dt: Float)
+    abstract fun applyGust(force: Float)
+}
 
+class WindChimeModel : OrnamentModel() {
     var bellAngle = 0f
     var bellVel = 0f
     val bellLength = 400f
@@ -623,7 +648,7 @@ class WindChimeModel {
     var tanzakuVel = 0f
     val tanzakuLength = 300f
 
-    fun update(dt: Float) {
+    override fun update(dt: Float) {
         val wind = windGen.getForce(dt)
 
         // Increased gravity to prevent inverted bell
@@ -636,20 +661,12 @@ class WindChimeModel {
         
         // Bell is heavy, catches less wind
         // Pull force from tanzaku swinging inside it - reduced for looser binding
-        val pullForce = (tanzakuAngle - bellAngle) * 10f
+        val pullForce = (tanzakuAngle - bellAngle) * 5f
         val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 0.1f + pullForce
         bellVel += bellAccel * dt
         
-        // Soft limit / linear slowdown for bell at +/- 15 degrees
-        val maxAngle = Math.toRadians(15.0).toFloat()
-        val bellAngleMag = Math.abs(bellAngle)
-        val dampingFactor = if (bellAngleMag > maxAngle * 0.5f) {
-            val normalizedOver = ((bellAngleMag - maxAngle * 0.5f) / (maxAngle * 0.5f)).coerceIn(0f, 1f)
-            1.8f + normalizedOver * 25f // Linearly increase damping as it approaches 15 degrees
-        } else {
-            1.8f
-        }
-        bellVel *= (1f - dampingFactor * dt).coerceAtLeast(0f)
+        // Simple, constant damping to avoid sudden velocity drops that look like jitter
+        bellVel *= (1f - 1.5f * dt).coerceAtLeast(0f)
         
         tanzakuAngle += tanzakuVel * dt
         bellAngle += bellVel * dt
@@ -660,33 +677,75 @@ class WindChimeModel {
         if (!tanzakuVel.isFinite()) tanzakuVel = 0f
         if (!bellVel.isFinite()) bellVel = 0f
 
-        // Clamp angles to prevent excessive values from breaking the Canvas rendering
-        tanzakuAngle = tanzakuAngle.coerceIn(-3f, 3f)
-        bellAngle = bellAngle.coerceIn(-3f, 3f)
+        // Soften the clamping to prevent excessive values without hard stops
+        tanzakuAngle = tanzakuAngle.coerceIn(-2.5f, 2.5f)
+        bellAngle = bellAngle.coerceIn(-1.5f, 1.5f)
 
         // Constrain tanzaku angle relative to the bell, to simulate the clapper hitting the glass
-        // Increased relative angle to allow more sway relative to bell
-        val maxRelativeAngle = Math.toRadians(55.0).toFloat()
+        // Smoothly dampen velocity when it hits the limit rather than sharp bouncing, which causes jitter
+        val maxRelativeAngle = Math.toRadians(45.0).toFloat()
         if (tanzakuAngle > bellAngle + maxRelativeAngle) {
             tanzakuAngle = bellAngle + maxRelativeAngle
-            val impact = tanzakuVel - bellVel // Relative velocity
-            if (impact > 0) {
-                tanzakuVel -= impact * 0.6f // Bounce off
-                bellVel += impact * 0.2f // Transfer momentum to bell
-            }
+            tanzakuVel = bellVel + (tanzakuVel - bellVel) * 0.5f // Soften impact, no negative bounce
         } else if (tanzakuAngle < bellAngle - maxRelativeAngle) {
             tanzakuAngle = bellAngle - maxRelativeAngle
-            val impact = tanzakuVel - bellVel // Relative velocity
-            if (impact < 0) {
-                tanzakuVel -= impact * 0.6f // Bounce off
-                bellVel += impact * 0.2f // Transfer momentum to bell
-            }
+            tanzakuVel = bellVel + (tanzakuVel - bellVel) * 0.5f // Soften impact, no negative bounce
         }
     }
 
-    fun applyGust(force: Float) {
+    override fun applyGust(force: Float) {
         bellVel += force * 0.1f
         tanzakuVel += force
+    }
+}
+
+class TeruTeruBozuModel : OrnamentModel() {
+    var bodyAngle = 0f
+    var bodyVel = 0f
+    val bodyLength = 350f
+    
+    var skirtAngle = 0f
+    var skirtVel = 0f
+    val skirtLength = 200f
+
+    override fun update(dt: Float) {
+        val wind = windGen.getForce(dt)
+        val g = 8000f
+
+        val skirtAccel = -(g / skirtLength) * sin(skirtAngle) + wind * 4.0f
+        skirtVel += skirtAccel * dt
+        skirtVel *= (1f - 0.5f * dt).coerceAtLeast(0f)
+        
+        val pullForce = (skirtAngle - bodyAngle) * 5f
+        val bodyAccel = -(g / bodyLength) * sin(bodyAngle) + wind * 0.1f + pullForce
+        bodyVel += bodyAccel * dt
+        
+        bodyVel *= (1f - 1.5f * dt).coerceAtLeast(0f)
+        
+        skirtAngle += skirtVel * dt
+        bodyAngle += bodyVel * dt
+
+        if (!skirtAngle.isFinite()) skirtAngle = 0f
+        if (!bodyAngle.isFinite()) bodyAngle = 0f
+        if (!skirtVel.isFinite()) skirtVel = 0f
+        if (!bodyVel.isFinite()) bodyVel = 0f
+
+        skirtAngle = skirtAngle.coerceIn(-2.5f, 2.5f)
+        bodyAngle = bodyAngle.coerceIn(-1.5f, 1.5f)
+
+        val maxRelativeAngle = Math.toRadians(45.0).toFloat()
+        if (skirtAngle > bodyAngle + maxRelativeAngle) {
+            skirtAngle = bodyAngle + maxRelativeAngle
+            skirtVel = bodyVel + (skirtVel - bodyVel) * 0.5f
+        } else if (skirtAngle < bodyAngle - maxRelativeAngle) {
+            skirtAngle = bodyAngle - maxRelativeAngle
+            skirtVel = bodyVel + (skirtVel - bodyVel) * 0.5f
+        }
+    }
+
+    override fun applyGust(force: Float) {
+        bodyVel += force * 0.1f
+        skirtVel += force
     }
 }
 
