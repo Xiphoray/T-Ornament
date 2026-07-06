@@ -1,0 +1,6 @@
+{
+  "name": "T-Ornament",
+  "description": "A dynamic desktop ornament app featuring a physics-based wind chime.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
