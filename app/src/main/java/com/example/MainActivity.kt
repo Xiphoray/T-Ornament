@@ -73,8 +73,8 @@ class MainActivity : ComponentActivity() {
 fun OrnamentApp() {
     var isSettingsButtonVisible by remember { mutableStateOf(false) }
     var isSettingsPageOpen by remember { mutableStateOf(false) }
-    // Macaron Background Color
-    var backgroundColor by remember { mutableStateOf(Color(0xFFFDE2E4)) } 
+    // Use dark theme by default, as requested
+    var backgroundColor by remember { mutableStateOf(Color.Black) } 
     val chimeModel = remember { WindChimeModel() }
 
     LaunchedEffect(isSettingsButtonVisible) {
@@ -141,12 +141,12 @@ fun SettingsPage(
     onColorSelected: (Color) -> Unit,
     onClose: () -> Unit
 ) {
-    val macaronColors = listOf(
-        Color(0xFFFDE2E4), // Pink
-        Color(0xFFD3E4CD), // Mint
-        Color(0xFFFEF6E4), // Yellow
-        Color(0xFFE2D5F8), // Purple
-        Color(0xFFBAE1FF)  // Blue
+    val bgColors = listOf(
+        Color.Black,
+        Color(0xFF121212), // Dark Gray
+        Color(0xFF001524), // Midnight Blue
+        Color(0xFF1B2A1E), // Dark Green
+        Color(0xFF2E1A1A)  // Dark Red
     )
 
     Box(
@@ -212,7 +212,7 @@ fun SettingsPage(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
                 ) {
-                    macaronColors.forEach { color ->
+                    bgColors.forEach { color ->
                         val isSelected = color == currentColor
                         Box(
                             modifier = Modifier
@@ -263,127 +263,131 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val currentMs = timeMs // Read to trigger redraw
-        val pivotX = size.width / 2
-        val pivotY = size.height * 0.35f // Center vertically higher up
-
+        val pivotX = size.width / 2f
+        val pivotY = 0f // The rotation anchor is at the fading end (top of the screen)
+        val bellYOffset = size.height * 0.35f // How far down the string goes before the bell
         val domeRadius = 140f
         
-        // Support string extends from the top of the screen down to the pivot
-        drawLine(
-            brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                colors = listOf(Color.Transparent, Color(0xFFD3E4CD).copy(alpha = 0.8f)), // Macaron Mint
-                startY = 0f,
-                endY = pivotY
-            ),
-            start = Offset(pivotX, 0f),
-            end = Offset(pivotX, pivotY),
-            strokeWidth = 3f
-        )
-
-        // Rotate the entire assembly including the support string
         withTransform({
             translate(pivotX, pivotY)
             rotate(Math.toDegrees(chimeModel.bellAngle.toDouble()).toFloat(), Offset.Zero)
         }) {
-                val domeHeight = 80f // height of the straight vertical part
-
-                // Dome Path
-                val domePath = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(-domeRadius, domeHeight)
-                    lineTo(-domeRadius, 0f)
-                    arcTo(
-                        rect = androidx.compose.ui.geometry.Rect(-domeRadius, -domeRadius, domeRadius, domeRadius),
-                        startAngleDegrees = 180f,
-                        sweepAngleDegrees = 180f,
-                        forceMoveTo = false
-                    )
-                    lineTo(domeRadius, domeHeight)
-                }
-
-                // Draw Inner Glow / Fill (Macaron Blue)
-                drawPath(
-                    path = domePath,
-                    color = Color(0xFFBAE1FF).copy(alpha = 0.4f) 
+                // Support string extends from the top of the screen down to the bell
+                drawLine(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color(0xFFD3E4CD).copy(alpha = 0.8f)), // Macaron Mint
+                        startY = 0f,
+                        endY = bellYOffset
+                    ),
+                    start = Offset.Zero,
+                    end = Offset(0f, bellYOffset),
+                    strokeWidth = 3f
                 )
 
-                // Geometric Accents inside dome (Macaron Green/Yellow)
-                drawRect(
-                    color = Color(0xFFBAFFC9).copy(alpha = 0.5f),
-                    topLeft = Offset(-60f, 20f),
-                    size = Size(80f, 60f)
-                )
-                drawRect(
-                    color = Color(0xFFFEF6E4).copy(alpha = 0.6f),
-                    topLeft = Offset(30f, 40f),
-                    size = Size(50f, 50f)
-                )
-
-                // Draw Dome Stroke
-                drawPath(
-                    path = domePath,
-                    color = Color(0xFFBAE1FF),
-                    style = Stroke(width = 4f)
-                )
-
-                // Draw Tanzaku (Paper Strip)
+                // Translate down to the center of the bell's dome arc
                 withTransform({
-                    // Tanzaku pivots from inside the dome, around the center of the arc
-                    // Subtract bellAngle so tanzakuAngle is relative to world vertical
-                    rotate(Math.toDegrees((chimeModel.tanzakuAngle - chimeModel.bellAngle).toDouble()).toFloat(), Offset.Zero)
+                    translate(0f, bellYOffset + domeRadius)
                 }) {
-                    // Internal Clapper String
-                    val stringLen = 70f
-                    drawLine(
-                        color = Color(0xFFD3E4CD), // Macaron Mint
-                        start = Offset.Zero,
-                        end = Offset(0f, stringLen),
-                        strokeWidth = 3f
+                    val domeHeight = 80f // height of the straight vertical part
+
+                    // Dome Path
+                    val domePath = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(-domeRadius, domeHeight)
+                        lineTo(-domeRadius, 0f)
+                        arcTo(
+                            rect = androidx.compose.ui.geometry.Rect(-domeRadius, -domeRadius, domeRadius, domeRadius),
+                            startAngleDegrees = 180f,
+                            sweepAngleDegrees = 180f,
+                            forceMoveTo = false
+                        )
+                        lineTo(domeRadius, domeHeight)
+                    }
+
+                    // Draw Inner Glow / Fill (Macaron Blue)
+                    drawPath(
+                        path = domePath,
+                        color = Color(0xFFBAE1FF).copy(alpha = 0.4f) 
                     )
 
-                    // Clapper bulb (Macaron Yellow)
-                    drawCircle(
-                        color = Color(0xFFFEF6E4),
-                        radius = 10f,
-                        center = Offset(0f, stringLen)
-                    )
-
-                    // The Tanzaku
-                    val tanzakuWidth = 70f
-                    val tanzakuHeight = 280f
-                    val tTop = stringLen
-
-                    // Macaron Pink Tanzaku
+                    // Geometric Accents inside dome (Macaron Green/Yellow)
                     drawRect(
-                        color = Color(0xFFFDE2E4).copy(alpha = 0.8f),
-                        topLeft = Offset(-tanzakuWidth / 2, tTop),
-                        size = Size(tanzakuWidth, tanzakuHeight)
+                        color = Color(0xFFBAFFC9).copy(alpha = 0.5f),
+                        topLeft = Offset(-60f, 20f),
+                        size = Size(80f, 60f)
                     )
                     drawRect(
-                        color = Color(0xFFFDE2E4),
-                        topLeft = Offset(-tanzakuWidth / 2, tTop),
-                        size = Size(tanzakuWidth, tanzakuHeight),
-                        style = Stroke(width = 3f)
+                        color = Color(0xFFFEF6E4).copy(alpha = 0.6f),
+                        topLeft = Offset(30f, 40f),
+                        size = Size(50f, 50f)
                     )
 
-                    // Minimalist Inscription/Texture (Darker Pink/Purple for contrast)
-                    drawLine(
-                        color = Color(0xFFE2D5F8).copy(alpha = 0.8f), // Macaron Purple
-                        start = Offset(-12f, tTop + 40f),
-                        end = Offset(-12f, tTop + 140f),
-                        strokeWidth = 4f
+                    // Draw Dome Stroke
+                    drawPath(
+                        path = domePath,
+                        color = Color(0xFFBAE1FF),
+                        style = Stroke(width = 4f)
                     )
-                    drawLine(
-                        color = Color(0xFFE2D5F8).copy(alpha = 0.8f),
-                        start = Offset(12f, tTop + 70f),
-                        end = Offset(12f, tTop + 220f),
-                        strokeWidth = 4f
-                    )
-                    drawLine(
-                        color = Color(0xFFE2D5F8).copy(alpha = 0.8f),
-                        start = Offset(-2f, tTop + 180f),
-                        end = Offset(-2f, tTop + 250f),
-                        strokeWidth = 4f
-                    )
+
+                    // Draw Tanzaku (Paper Strip)
+                    withTransform({
+                        // Tanzaku pivots from inside the dome, around the center of the arc
+                        // Subtract bellAngle so tanzakuAngle is relative to world vertical
+                        rotate(Math.toDegrees((chimeModel.tanzakuAngle - chimeModel.bellAngle).toDouble()).toFloat(), Offset.Zero)
+                    }) {
+                        // Internal Clapper String
+                        val stringLen = 70f
+                        drawLine(
+                            color = Color(0xFFD3E4CD), // Macaron Mint
+                            start = Offset.Zero,
+                            end = Offset(0f, stringLen),
+                            strokeWidth = 3f
+                        )
+
+                        // Clapper bulb (Macaron Yellow)
+                        drawCircle(
+                            color = Color(0xFFFEF6E4),
+                            radius = 10f,
+                            center = Offset(0f, stringLen)
+                        )
+
+                        // The Tanzaku
+                        val tanzakuWidth = 70f
+                        val tanzakuHeight = 280f
+                        val tTop = stringLen
+
+                        // Macaron Pink Tanzaku
+                        drawRect(
+                            color = Color(0xFFFDE2E4).copy(alpha = 0.8f),
+                            topLeft = Offset(-tanzakuWidth / 2, tTop),
+                            size = Size(tanzakuWidth, tanzakuHeight)
+                        )
+                        drawRect(
+                            color = Color(0xFFFDE2E4),
+                            topLeft = Offset(-tanzakuWidth / 2, tTop),
+                            size = Size(tanzakuWidth, tanzakuHeight),
+                            style = Stroke(width = 3f)
+                        )
+
+                        // Minimalist Inscription/Texture (Darker Pink/Purple for contrast)
+                        drawLine(
+                            color = Color(0xFFE2D5F8).copy(alpha = 0.8f), // Macaron Purple
+                            start = Offset(-12f, tTop + 40f),
+                            end = Offset(-12f, tTop + 140f),
+                            strokeWidth = 4f
+                        )
+                        drawLine(
+                            color = Color(0xFFE2D5F8).copy(alpha = 0.8f),
+                            start = Offset(12f, tTop + 70f),
+                            end = Offset(12f, tTop + 220f),
+                            strokeWidth = 4f
+                        )
+                        drawLine(
+                            color = Color(0xFFE2D5F8).copy(alpha = 0.8f),
+                            start = Offset(-2f, tTop + 180f),
+                            end = Offset(-2f, tTop + 250f),
+                            strokeWidth = 4f
+                        )
+                    }
                 }
         }
     }
@@ -397,10 +401,10 @@ class WindGenerator {
     fun getForce(dt: Float): Float {
         time += dt
         if (Random.nextFloat() < dt * 0.3f) {
-            gustTarget = (Random.nextFloat() * 2f - 1f) * 6f // Reduced wind gust force
+            gustTarget = (Random.nextFloat() * 2f - 1f) * 3f // Reduced wind gust force
         }
         gust += (gustTarget - gust) * dt * 1.0f
-        val base = sin(time * 0.9f) * 1.5f + sin(time * 2.3f) * 0.5f // Reduced base wind force
+        val base = sin(time * 0.9f) * 0.8f + sin(time * 2.3f) * 0.3f // Reduced base wind force
         return base + gust
     }
 }
@@ -419,19 +423,30 @@ class WindChimeModel {
     fun update(dt: Float) {
         val wind = windGen.getForce(dt)
 
-        val g = 3000f
+        // Increased gravity to prevent inverted bell
+        val g = 8000f
 
-        // Tanzaku is light, catches more wind directly
-        val tanzakuAccel = -(g / tanzakuLength) * sin(tanzakuAngle) + wind * 2.0f
+        // Tanzaku is light, catches more wind directly, sways more
+        val tanzakuAccel = -(g / tanzakuLength) * sin(tanzakuAngle) + wind * 4.0f
         tanzakuVel += tanzakuAccel * dt
-        tanzakuVel *= (1f - 1.2f * dt).coerceAtLeast(0f)
+        tanzakuVel *= (1f - 0.5f * dt).coerceAtLeast(0f) // Reduced damping for freer movement
         
         // Bell is heavy, catches less wind
-        // Reduced pull force significantly to prevent explicit Euler explosion at high dt
-        val pullForce = (tanzakuAngle - bellAngle) * 50f
-        val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 0.2f + pullForce
+        // Pull force from tanzaku swinging inside it - reduced for looser binding
+        val pullForce = (tanzakuAngle - bellAngle) * 30f
+        val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 0.1f + pullForce
         bellVel += bellAccel * dt
-        bellVel *= (1f - 1.8f * dt).coerceAtLeast(0f)
+        
+        // Soft limit / linear slowdown for bell at +/- 15 degrees
+        val maxAngle = Math.toRadians(15.0).toFloat()
+        val bellAngleMag = Math.abs(bellAngle)
+        val dampingFactor = if (bellAngleMag > maxAngle * 0.5f) {
+            val normalizedOver = ((bellAngleMag - maxAngle * 0.5f) / (maxAngle * 0.5f)).coerceIn(0f, 1f)
+            1.8f + normalizedOver * 25f // Linearly increase damping as it approaches 15 degrees
+        } else {
+            1.8f
+        }
+        bellVel *= (1f - dampingFactor * dt).coerceAtLeast(0f)
         
         tanzakuAngle += tanzakuVel * dt
         bellAngle += bellVel * dt
@@ -447,7 +462,8 @@ class WindChimeModel {
         bellAngle = bellAngle.coerceIn(-3f, 3f)
 
         // Constrain tanzaku angle relative to the bell, to simulate the clapper hitting the glass
-        val maxRelativeAngle = Math.toRadians(20.0).toFloat()
+        // Increased relative angle to allow more sway relative to bell
+        val maxRelativeAngle = Math.toRadians(55.0).toFloat()
         if (tanzakuAngle > bellAngle + maxRelativeAngle) {
             tanzakuAngle = bellAngle + maxRelativeAngle
             val impact = tanzakuVel - bellVel // Relative velocity
