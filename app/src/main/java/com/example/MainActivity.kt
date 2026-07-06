@@ -50,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -69,14 +71,16 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun OrnamentApp() {
-    var isSettingsVisible by remember { mutableStateOf(false) }
-    var backgroundColor by remember { mutableStateOf(Color.Black) }
+    var isSettingsButtonVisible by remember { mutableStateOf(false) }
+    var isSettingsPageOpen by remember { mutableStateOf(false) }
+    // Macaron Background Color
+    var backgroundColor by remember { mutableStateOf(Color(0xFFFDE2E4)) } 
     val chimeModel = remember { WindChimeModel() }
 
-    LaunchedEffect(isSettingsVisible) {
-        if (isSettingsVisible) {
-            delay(5000)
-            isSettingsVisible = false
+    LaunchedEffect(isSettingsButtonVisible) {
+        if (isSettingsButtonVisible && !isSettingsPageOpen) {
+            delay(3000)
+            isSettingsButtonVisible = false
         }
     }
 
@@ -87,92 +91,152 @@ fun OrnamentApp() {
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {
-                        isSettingsVisible = true
+                        isSettingsButtonVisible = true
                         chimeModel.applyGust((Random.nextFloat() - 0.5f) * 15f)
                     }
                 )
             }
     ) {
+        // Only one ornament type currently: Wind Chime
         WindChimeScreen(chimeModel = chimeModel)
 
         AnimatedVisibility(
-            visible = isSettingsVisible,
+            visible = isSettingsButtonVisible && !isSettingsPageOpen,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 64.dp)
+                .align(Alignment.BottomEnd)
+                .padding(32.dp)
         ) {
-            SettingsPanel(
-                currentColor = backgroundColor,
-                onColorSelected = { backgroundColor = it }
-            )
+            androidx.compose.material3.IconButton(
+                onClick = { isSettingsPageOpen = true },
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(Color.White.copy(alpha = 0.3f), CircleShape)
+            ) {
+                androidx.compose.material3.Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = Color.Black.copy(alpha = 0.7f)
+                )
+            }
         }
+    }
+
+    if (isSettingsPageOpen) {
+        SettingsPage(
+            currentColor = backgroundColor,
+            onColorSelected = { backgroundColor = it },
+            onClose = {
+                isSettingsPageOpen = false
+                isSettingsButtonVisible = false
+            }
+        )
     }
 }
 
 @Composable
-fun SettingsPanel(
+fun SettingsPage(
     currentColor: Color,
-    onColorSelected: (Color) -> Unit
+    onColorSelected: (Color) -> Unit,
+    onClose: () -> Unit
 ) {
-    val colors = listOf(
-        Color.Black,
-        Color(0xFF121212), // Dark Gray
-        Color(0xFF001524), // Midnight Blue
-        Color(0xFF1B2A1E), // Dark Green
-        Color(0xFF2E1A1A)  // Dark Red
+    val macaronColors = listOf(
+        Color(0xFFFDE2E4), // Pink
+        Color(0xFFD3E4CD), // Mint
+        Color(0xFFFEF6E4), // Yellow
+        Color(0xFFE2D5F8), // Purple
+        Color(0xFFBAE1FF)  // Blue
     )
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.15f)),
-        modifier = Modifier.padding(16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.8f))
+            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {
+                onClose()
+            }
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(32.dp)
+                .clickable { /* prevent click through */ }
         ) {
-            Text(
-                text = "T-Ornament",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Current: Wind Chime",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                colors.forEach { color ->
-                    val isSelected = color == currentColor
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp)
-                            .size(36.dp)
-                            .background(
-                                color = color,
-                                shape = CircleShape
-                            )
-                            .clickable { onColorSelected(color) }
-                    ) {
-                        if (isSelected) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Color.White.copy(alpha = 0.3f),
-                                        CircleShape
-                                    )
-                            )
+                Text(
+                    text = "Settings",
+                    color = Color.Black,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                Text(
+                    text = "Ornament Type",
+                    color = Color.Black.copy(alpha = 0.6f),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                // Mock dropdown/selection for ornament type
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF0F0F0),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
+                ) {
+                    Text(
+                        text = "Wind Chime (风铃)",
+                        color = Color.Black,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(16.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+
+                Text(
+                    text = "Background Color",
+                    color = Color.Black.copy(alpha = 0.6f),
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+                ) {
+                    macaronColors.forEach { color ->
+                        val isSelected = color == currentColor
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(color, CircleShape)
+                                .clickable { onColorSelected(color) }
+                        ) {
+                            if (isSelected) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(4.dp)
+                                        .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                                )
+                            }
                         }
                     }
+                }
+
+                androidx.compose.material3.Button(
+                    onClick = onClose,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFF333333))
+                ) {
+                    Text("Close", color = Color.White)
                 }
             }
         }
@@ -207,7 +271,7 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
         // Support string extends from the top of the screen down to the pivot
         drawLine(
             brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                colors = listOf(Color.Transparent, Color.White.copy(alpha = 0.5f)),
+                colors = listOf(Color.Transparent, Color(0xFFD3E4CD).copy(alpha = 0.8f)), // Macaron Mint
                 startY = 0f,
                 endY = pivotY
             ),
@@ -236,20 +300,20 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
                     lineTo(domeRadius, domeHeight)
                 }
 
-                // Draw Inner Glow / Fill
+                // Draw Inner Glow / Fill (Macaron Blue)
                 drawPath(
                     path = domePath,
-                    color = Color.White.copy(alpha = 0.1f)
+                    color = Color(0xFFBAE1FF).copy(alpha = 0.4f) 
                 )
 
-                // Geometric Accents inside dome (Mountain Style)
+                // Geometric Accents inside dome (Macaron Green/Yellow)
                 drawRect(
-                    color = Color.White.copy(alpha = 0.15f),
+                    color = Color(0xFFBAFFC9).copy(alpha = 0.5f),
                     topLeft = Offset(-60f, 20f),
                     size = Size(80f, 60f)
                 )
                 drawRect(
-                    color = Color.White.copy(alpha = 0.08f),
+                    color = Color(0xFFFEF6E4).copy(alpha = 0.6f),
                     topLeft = Offset(30f, 40f),
                     size = Size(50f, 50f)
                 )
@@ -257,7 +321,7 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
                 // Draw Dome Stroke
                 drawPath(
                     path = domePath,
-                    color = Color.White.copy(alpha = 0.2f),
+                    color = Color(0xFFBAE1FF),
                     style = Stroke(width = 4f)
                 )
 
@@ -270,16 +334,16 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
                     // Internal Clapper String
                     val stringLen = 70f
                     drawLine(
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = Color(0xFFD3E4CD), // Macaron Mint
                         start = Offset.Zero,
                         end = Offset(0f, stringLen),
-                        strokeWidth = 2f
+                        strokeWidth = 3f
                     )
 
-                    // Clapper bulb
+                    // Clapper bulb (Macaron Yellow)
                     drawCircle(
-                        color = Color.White.copy(alpha = 0.5f),
-                        radius = 8f,
+                        color = Color(0xFFFEF6E4),
+                        radius = 10f,
                         center = Offset(0f, stringLen)
                     )
 
@@ -288,36 +352,37 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
                     val tanzakuHeight = 280f
                     val tTop = stringLen
 
+                    // Macaron Pink Tanzaku
                     drawRect(
-                        color = Color.White.copy(alpha = 0.15f),
+                        color = Color(0xFFFDE2E4).copy(alpha = 0.8f),
                         topLeft = Offset(-tanzakuWidth / 2, tTop),
                         size = Size(tanzakuWidth, tanzakuHeight)
                     )
                     drawRect(
-                        color = Color.White.copy(alpha = 0.1f),
+                        color = Color(0xFFFDE2E4),
                         topLeft = Offset(-tanzakuWidth / 2, tTop),
                         size = Size(tanzakuWidth, tanzakuHeight),
-                        style = Stroke(width = 2f)
+                        style = Stroke(width = 3f)
                     )
 
-                    // Minimalist Inscription/Texture
+                    // Minimalist Inscription/Texture (Darker Pink/Purple for contrast)
                     drawLine(
-                        color = Color.White.copy(alpha = 0.2f),
+                        color = Color(0xFFE2D5F8).copy(alpha = 0.8f), // Macaron Purple
                         start = Offset(-12f, tTop + 40f),
                         end = Offset(-12f, tTop + 140f),
-                        strokeWidth = 3f
+                        strokeWidth = 4f
                     )
                     drawLine(
-                        color = Color.White.copy(alpha = 0.2f),
+                        color = Color(0xFFE2D5F8).copy(alpha = 0.8f),
                         start = Offset(12f, tTop + 70f),
                         end = Offset(12f, tTop + 220f),
-                        strokeWidth = 3f
+                        strokeWidth = 4f
                     )
                     drawLine(
-                        color = Color.White.copy(alpha = 0.2f),
+                        color = Color(0xFFE2D5F8).copy(alpha = 0.8f),
                         start = Offset(-2f, tTop + 180f),
                         end = Offset(-2f, tTop + 250f),
-                        strokeWidth = 3f
+                        strokeWidth = 4f
                     )
                 }
         }
@@ -371,7 +436,13 @@ class WindChimeModel {
         tanzakuAngle += tanzakuVel * dt
         bellAngle += bellVel * dt
 
-        // Clamp angles to prevent NaN/Infinity from breaking the Canvas rendering
+        // Explicitly check for NaN and reset to 0 to prevent render thread freezing
+        if (tanzakuAngle.isNaN()) tanzakuAngle = 0f
+        if (bellAngle.isNaN()) bellAngle = 0f
+        if (tanzakuVel.isNaN()) tanzakuVel = 0f
+        if (bellVel.isNaN()) bellVel = 0f
+
+        // Clamp angles to prevent excessive values from breaking the Canvas rendering
         tanzakuAngle = tanzakuAngle.coerceIn(-3f, 3f)
         bellAngle = bellAngle.coerceIn(-3f, 3f)
 
