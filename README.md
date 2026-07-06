@@ -8,7 +8,7 @@
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![Android](https://img.shields.io/badge/Android-24%2B-brightgreen.svg)](https://android.com)
-  [![Build](https://github.com/yourusername/t-ornament/actions/workflows/build-release.yml/badge.svg)](https://github.com/yourusername/t-ornament/actions)
+  [![Build](https://github.com/yourusername/t-ornament/actions/workflows/build-release.yml/badge.svg)](https://github.com/xiphoray/t-ornament/actions)
 </div>
 
 <br/>

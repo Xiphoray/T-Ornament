@@ -56,6 +56,11 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
+enum class OrnamentType(val displayName: String) {
+    WIND_CHIME("Wind Chime (风铃)"),
+    TERU_TERU_BOZU("Teru Teru Bozu (晴天娃娃)")
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +78,7 @@ class MainActivity : ComponentActivity() {
 fun OrnamentApp() {
     var isSettingsButtonVisible by remember { mutableStateOf(false) }
     var isSettingsPageOpen by remember { mutableStateOf(false) }
+    var currentOrnament by remember { mutableStateOf(OrnamentType.WIND_CHIME) }
     // Use dark theme by default, as requested
     var backgroundColor by remember { mutableStateOf(Color.Black) } 
     val chimeModel = remember { WindChimeModel() }
@@ -97,8 +103,10 @@ fun OrnamentApp() {
                 )
             }
     ) {
-        // Only one ornament type currently: Wind Chime
-        WindChimeScreen(chimeModel = chimeModel)
+        when (currentOrnament) {
+            OrnamentType.WIND_CHIME -> WindChimeScreen(chimeModel = chimeModel)
+            OrnamentType.TERU_TERU_BOZU -> TeruTeruBozuScreen(chimeModel = chimeModel)
+        }
 
         AnimatedVisibility(
             visible = isSettingsButtonVisible && !isSettingsPageOpen,
@@ -125,6 +133,8 @@ fun OrnamentApp() {
 
     if (isSettingsPageOpen) {
         SettingsPage(
+            currentOrnament = currentOrnament,
+            onOrnamentSelected = { currentOrnament = it },
             currentColor = backgroundColor,
             onColorSelected = { backgroundColor = it },
             onClose = {
@@ -137,10 +147,13 @@ fun OrnamentApp() {
 
 @Composable
 fun SettingsPage(
+    currentOrnament: OrnamentType,
+    onOrnamentSelected: (OrnamentType) -> Unit,
     currentColor: Color,
     onColorSelected: (Color) -> Unit,
     onClose: () -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
     val bgColors = listOf(
         Color.Black,
         Color(0xFF121212), // Dark Gray
@@ -185,20 +198,41 @@ fun SettingsPage(
                 )
                 
                 // Mock dropdown/selection for ornament type
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF0F0F0),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp)
                 ) {
-                    Text(
-                        text = "Wind Chime (风铃)",
-                        color = Color.Black,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF0F0F0),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { expanded = true }
+                    ) {
+                        Text(
+                            text = currentOrnament.displayName,
+                            color = Color.Black,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(16.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                    androidx.compose.material3.DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.fillMaxWidth(0.7f)
+                    ) {
+                        OrnamentType.entries.forEach { type ->
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text(type.displayName) },
+                                onClick = { 
+                                    onOrnamentSelected(type)
+                                    expanded = false 
+                                }
+                            )
+                        }
+                    }
                 }
 
                 Text(
@@ -395,6 +429,166 @@ fun WindChimeScreen(chimeModel: WindChimeModel) {
     }
 }
 
+@Composable
+fun TeruTeruBozuScreen(chimeModel: WindChimeModel) {
+    var timeMs by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(Unit) {
+        var lastTime = withFrameMillis { it }
+        while (true) {
+            timeMs = withFrameMillis { it }
+            val rawDt = (timeMs - lastTime) / 1000f
+            lastTime = timeMs
+            if (rawDt > 0 && rawDt < 0.1f) {
+                // Cap the simulation step to 1/30th of a second to ensure stability
+                val simDt = rawDt.coerceAtMost(0.033f)
+                chimeModel.update(simDt)
+            }
+        }
+    }
+
+    val supportBrush = remember {
+        androidx.compose.ui.graphics.Brush.verticalGradient(
+            colors = listOf(Color.Transparent, Color.White.copy(alpha = 0.8f))
+        )
+    }
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val currentMs = timeMs // Read to trigger redraw
+        val pivotX = size.width / 2f
+        val pivotY = 0f // The rotation anchor is at the top of the screen
+        val headYOffset = size.height * 0.35f // How far down the string goes before the head
+        val headRadius = 65f
+        
+        withTransform({
+            translate(pivotX, pivotY)
+            // Use bellAngle for the main string sway
+            rotate(Math.toDegrees(chimeModel.bellAngle.toDouble()).toFloat(), Offset.Zero)
+        }) {
+            // Support string
+            drawLine(
+                brush = supportBrush,
+                start = Offset.Zero,
+                end = Offset(0f, headYOffset),
+                strokeWidth = 3f
+            )
+
+            // Translate to neck/head
+            withTransform({
+                translate(0f, headYOffset)
+            }) {
+                // Draw skirt (driven by tanzaku angle but pivoted from neck)
+                withTransform({
+                    // Scale down the tanzaku sway for the skirt so it looks connected
+                    rotate(Math.toDegrees((chimeModel.tanzakuAngle - chimeModel.bellAngle).toDouble()).toFloat() * 0.4f, Offset.Zero)
+                }) {
+                    // Skirt
+                    val skirtPath = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(-25f, 0f) // Neck width left
+                        lineTo(25f, 0f)  // Neck width right
+                        quadraticBezierTo(110f, 160f, 140f, 220f) // Flare right
+                        
+                        // wavy bottom
+                        quadraticBezierTo(0f, 260f, -140f, 220f)
+                        
+                        quadraticBezierTo(-110f, 160f, -25f, 0f) // Flare left
+                    }
+                    
+                    drawPath(
+                        path = skirtPath,
+                        color = Color(0xFFFEF6E4) // Macaron Yellow/Cream
+                    )
+                    
+                    // Skirt folds
+                    val foldPath = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(-15f, 20f)
+                        quadraticBezierTo(-30f, 100f, -60f, 225f)
+                        
+                        moveTo(15f, 20f)
+                        quadraticBezierTo(30f, 100f, 60f, 225f)
+                        
+                        moveTo(0f, 25f)
+                        lineTo(0f, 235f)
+                    }
+                    drawPath(
+                        path = foldPath,
+                        color = Color.Black.copy(alpha = 0.05f),
+                        style = Stroke(width = 3f)
+                    )
+                }
+
+                // Draw Head (Macaron White)
+                drawCircle(
+                    color = Color.White,
+                    radius = headRadius,
+                    center = Offset(0f, -headRadius/2)
+                )
+                
+                // Draw Ribbon around neck (Macaron Pink)
+                drawRect(
+                    color = Color(0xFFFDE2E4), // Macaron Pink
+                    topLeft = Offset(-30f, -8f),
+                    size = Size(60f, 16f),
+                    style = androidx.compose.ui.graphics.drawscope.Fill
+                )
+                
+                // Draw Ribbon tails (bow)
+                val bowPath = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(-15f, 0f)
+                    lineTo(-45f, 30f)
+                    lineTo(-25f, 40f)
+                    close()
+                    
+                    moveTo(15f, 0f)
+                    lineTo(45f, 30f)
+                    lineTo(25f, 40f)
+                    close()
+                }
+                drawPath(
+                    path = bowPath,
+                    color = Color(0xFFFDE2E4)
+                )
+                
+                // Draw Face (Cute!)
+                // Left Eye
+                drawCircle(
+                    color = Color(0xFF555555),
+                    radius = 5f,
+                    center = Offset(-20f, -headRadius/2 + 5f)
+                )
+                // Right Eye
+                drawCircle(
+                    color = Color(0xFF555555),
+                    radius = 5f,
+                    center = Offset(20f, -headRadius/2 + 5f)
+                )
+                // Smile
+                val smilePath = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(-10f, -headRadius/2 + 20f)
+                    quadraticBezierTo(0f, -headRadius/2 + 30f, 10f, -headRadius/2 + 20f)
+                }
+                drawPath(
+                    path = smilePath,
+                    color = Color(0xFF555555),
+                    style = Stroke(width = 3f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                )
+                
+                // Blush (Macaron Pink)
+                drawCircle(
+                    color = Color(0xFFFDE2E4),
+                    radius = 7f,
+                    center = Offset(-30f, -headRadius/2 + 12f)
+                )
+                drawCircle(
+                    color = Color(0xFFFDE2E4),
+                    radius = 7f,
+                    center = Offset(30f, -headRadius/2 + 12f)
+                )
+            }
+        }
+    }
+}
+
 class WindGenerator {
     private var time = 0f
     private var gust = 0f
@@ -402,11 +596,15 @@ class WindGenerator {
 
     fun getForce(dt: Float): Float {
         time += dt
-        if (Random.nextFloat() < dt * 0.3f) {
-            gustTarget = (Random.nextFloat() * 2f - 1f) * 3f // Reduced wind gust force
+        // Reduce probability of sudden gust target change
+        if (Random.nextFloat() < dt * 0.2f) {
+            gustTarget = (Random.nextFloat() * 2f - 1f) * 2f // Gentler wind gust target
         }
-        gust += (gustTarget - gust) * dt * 1.0f
-        val base = sin(time * 0.9f) * 0.8f + sin(time * 2.3f) * 0.3f // Reduced base wind force
+        // Smoothly interpolate towards gustTarget, effectively making the wind change softer/more linear
+        gust += (gustTarget - gust) * dt * 0.3f
+        
+        // Slower, softer base wind oscillation
+        val base = sin(time * 0.5f) * 0.6f + sin(time * 1.2f) * 0.2f 
         return base + gust
     }
 }
@@ -435,7 +633,7 @@ class WindChimeModel {
         
         // Bell is heavy, catches less wind
         // Pull force from tanzaku swinging inside it - reduced for looser binding
-        val pullForce = (tanzakuAngle - bellAngle) * 30f
+        val pullForce = (tanzakuAngle - bellAngle) * 10f
         val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 0.1f + pullForce
         bellVel += bellAccel * dt
         
