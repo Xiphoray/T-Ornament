@@ -662,7 +662,7 @@ class WindChimeModel : OrnamentModel() {
         // Bell is heavy, catches less wind
         // Pull force from tanzaku swinging inside it - reduced for looser binding
         val pullForce = (tanzakuAngle - bellAngle) * 5f
-        val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 0.1f + pullForce
+        val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 0.3f + pullForce
         bellVel += bellAccel * dt
         
         // Simple, constant damping to avoid sudden velocity drops that look like jitter
@@ -717,7 +717,7 @@ class TeruTeruBozuModel : OrnamentModel() {
         skirtVel *= (1f - 0.5f * dt).coerceAtLeast(0f)
         
         val pullForce = (skirtAngle - bodyAngle) * 5f
-        val bodyAccel = -(g / bodyLength) * sin(bodyAngle) + wind * 0.1f + pullForce
+        val bodyAccel = -(g / bodyLength) * sin(bodyAngle) + wind * 0.3f + pullForce
         bodyVel += bodyAccel * dt
         
         bodyVel *= (1f - 1.5f * dt).coerceAtLeast(0f)
