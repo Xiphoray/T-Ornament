@@ -627,7 +627,7 @@ class WindGenerator {
         gust += (gustTarget - gust) * dt * 0.2f
         
         // Base wind oscillation increased by 1.5x (0.6f -> 0.9f, 0.2f -> 0.3f)
-        val base = sin(time * 0.5f) * 0.9f + sin(time * 1.2f) * 0.3f 
+        val base = sin(time * 0.5f) * 0.9f + sin(time * 1.2f) * 1f 
         
         return base + gust
     }
@@ -662,7 +662,7 @@ class WindChimeModel : OrnamentModel() {
         // Bell is heavy, catches less wind
         // Pull force from tanzaku swinging inside it - reduced for looser binding
         val pullForce = (tanzakuAngle - bellAngle) * 5f
-        val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 0.3f + pullForce
+        val bellAccel = -(g / bellLength) * sin(bellAngle) + wind * 1f + pullForce
         bellVel += bellAccel * dt
         
         // Simple, constant damping to avoid sudden velocity drops that look like jitter
@@ -717,7 +717,7 @@ class TeruTeruBozuModel : OrnamentModel() {
         skirtVel *= (1f - 0.5f * dt).coerceAtLeast(0f)
         
         val pullForce = (skirtAngle - bodyAngle) * 5f
-        val bodyAccel = -(g / bodyLength) * sin(bodyAngle) + wind * 0.3f + pullForce
+        val bodyAccel = -(g / bodyLength) * sin(bodyAngle) + wind * 1f + pullForce
         bodyVel += bodyAccel * dt
         
         bodyVel *= (1f - 1.5f * dt).coerceAtLeast(0f)
